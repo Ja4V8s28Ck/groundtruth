@@ -361,7 +361,7 @@ def render_loaded() -> None:
     st.space("medium")
 
     st.markdown("#### Build your session")
-    count = st.slider("How many questions?", 4, 12, 8, disabled=busy())
+    count = st.slider("How many questions?", 2, 12, 8, disabled=busy())
     st.caption(f"Questions are spread across all {stats['chunks']} sections, not just the first page.")
 
     # `on_change="rerun"` opts into state tracking, which is what makes the
