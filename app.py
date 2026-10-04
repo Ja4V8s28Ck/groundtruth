@@ -110,6 +110,9 @@ def load(text: str = "", filename: str = "", data: bytes | None = None) -> None:
         mode = store.build(progress=lambda fraction, message: bar.progress(min(fraction, 1.0), message))
         bar.empty()
 
+    for key in [k for k in st.session_state if k.startswith(("answer_", "check_", "passage_"))]:
+        del st.session_state[key]
+
     st.session_state.doc_text = text
     st.session_state.chunks = chunks
     st.session_state.store = store
