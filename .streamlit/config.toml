@@ -1,0 +1,56 @@
+# Groundtruth theme. Orange = the highlight, the finding, the thing worth clicking.
+# Native Streamlit theming only - no custom CSS anywhere in this app.
+
+[theme]
+base = "light"
+primaryColor = "#FF7518"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f6f8fa"
+textColor = "#1f2328"
+borderColor = "#d0d7de"
+linkColor = "#FF7518"
+codeBackgroundColor = "#f6f8fa"
+
+greenColor = "#1a7f37"
+orangeColor = "#FF7518"
+redColor = "#cf222e"
+blueColor = "#0969da"
+
+showWidgetBorder = true
+showSidebarBorder = true
+baseRadius = "medium"
+buttonRadius = "medium"
+linkUnderline = false
+font = "sans-serif"
+headingFontSizes = ["34px", "26px", "21px", "17px", "15px", "13px"]
+headingFontWeights = [650, 620, 600, 600, 600, 600]
+
+[theme.sidebar]
+backgroundColor = "#f6f8fa"
+secondaryBackgroundColor = "#eaeef2"
+borderColor = "#d0d7de"
+
+[theme.light]
+primaryColor = "#FF7518"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f6f8fa"
+textColor = "#1f2328"
+borderColor = "#d0d7de"
+linkColor = "#FF7518"
+orangeColor = "#FF7518"
+
+[theme.dark]
+primaryColor = "#fb8c3c"
+backgroundColor = "#0d1117"
+secondaryBackgroundColor = "#161b22"
+textColor = "#e6edf3"
+borderColor = "#30363d"
+linkColor = "#fb8c3c"
+greenColor = "#3fb950"
+orangeColor = "#fb8c3c"
+redColor = "#f85149"
+
+[theme.dark.sidebar]
+backgroundColor = "#010409"
+secondaryBackgroundColor = "#0d1117"
+borderColor = "#30363d"
