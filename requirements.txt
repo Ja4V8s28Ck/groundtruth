@@ -1,0 +1,4 @@
+streamlit>=1.40
+requests>=2.32
+pypdf>=5.1
+numpy>=1.26
