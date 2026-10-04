@@ -286,7 +286,7 @@ with st.sidebar:
 def render_landing() -> None:
     st.title("Groundtruth", icon=":material/bookmark:")
     st.markdown(
-        "A revision partner that will only answer from **your own notes** — "
+        "A revision partner that will only answer from **your own notes** "
         "and shows you the exact line it used."
     )
 
@@ -300,8 +300,6 @@ def render_landing() -> None:
             with st.container(border=True):
                 st.markdown(f"#### {icon} {heading}")
                 st.caption(body)
-
-    st.space("medium")
 
     with st.container(border=True):
         st.markdown("#### Start with the sample")
@@ -538,7 +536,8 @@ def render_results() -> None:
 
     summary = st.session_state.summary or {}
     if summary.get("weak_topics"):
-        st.write("**Re-read these:**", *[st.badge(t, color="orange") for t in summary["weak_topics"]])
+        topics = " ".join(f":orange-badge[{topic}]" for topic in summary["weak_topics"])
+        st.markdown(f"**Re-read these:** {topics}")
     if summary.get("next_step"):
         st.info(summary["next_step"], icon=":material/arrow_forward:")
     if summary.get("encouragement"):
