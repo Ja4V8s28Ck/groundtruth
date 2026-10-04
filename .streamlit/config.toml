@@ -38,6 +38,7 @@ textColor = "#1f2328"
 borderColor = "#d0d7de"
 linkColor = "#FF7518"
 orangeColor = "#FF7518"
+codeBackgroundColor = "#f6f8fa"
 
 [theme.dark]
 primaryColor = "#fb8c3c"
@@ -49,6 +50,7 @@ linkColor = "#fb8c3c"
 greenColor = "#3fb950"
 orangeColor = "#fb8c3c"
 redColor = "#f85149"
+codeBackgroundColor = "#161b22"
 
 [theme.dark.sidebar]
 backgroundColor = "#010409"
