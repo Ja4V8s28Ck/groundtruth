@@ -424,21 +424,23 @@ def render_quiz() -> None:
             st.markdown(f"**{question.text}**")
 
             if verdict is None:
-                st.text_area(
-                    "Your answer",
-                    key=f"answer_{question.id}",
-                    height=90,
-                    disabled=busy(),
-                    placeholder="Answer in your own words…",
-                    label_visibility="collapsed",
-                )
-                if st.button(
-                    "Check my answer",
-                    key=f"check_{question.id}",
-                    type="primary",
-                    icon=":material/check:",
-                    disabled=busy(),
-                ):
+                with st.form(f"answer_form_{question.id}", border=False):
+                    st.text_area(
+                        "Your answer",
+                        key=f"answer_{question.id}",
+                        height=90,
+                        disabled=busy(),
+                        placeholder="Answer in your own words…",
+                        label_visibility="collapsed",
+                    )
+                    submitted = st.form_submit_button(
+                        "Check my answer",
+                        key=f"check_{question.id}",
+                        type="primary",
+                        icon=":material/check:",
+                        disabled=busy(),
+                    )
+                if submitted:
                     queue("grade", qid=question.id)
                 continue
 
@@ -476,10 +478,17 @@ def render_quiz() -> None:
                 on_change="rerun",
             )
             if passage.open:
-                hits = st.session_state.store.search(question.text, k=1)
-                if hits:
-                    st.markdown(hits[0].text)
-                    st.caption(f"section {hits[0].chunk.id} · {hits[0].chunk.cite()}")
+                # Cached per question. This re-ran on every script rerun, and with
+                # semantic search live that meant a real embed round trip to
+                # Ollama every time for a passage already fetched. Fetch once.
+                cache_key = f"passage_hit_{question.id}"
+                if cache_key not in st.session_state:
+                    hits = st.session_state.store.search(question.text, k=1)
+                    st.session_state[cache_key] = hits[0] if hits else None
+                hit = st.session_state[cache_key]
+                if hit is not None:
+                    st.markdown(hit.text)
+                    st.caption(f"section {hit.chunk.id} · {hit.chunk.cite()}")
 
 
 def render_results() -> None:
