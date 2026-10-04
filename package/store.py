@@ -58,29 +58,36 @@ class NoteStore:
 
     def build(self, progress=None) -> str:
         """Index the chunks. Returns the retrieval mode actually used."""
-        total = len(self.chunks)
+        total = len(self.chunks) or 1
         for position, chunk in enumerate(self.chunks, start=1):
             if progress:
-                progress(position / total, f"Indexing chunk {position} of {total}")
-            self._index_chunk(position, chunk)
-        return self.mode
+                progress(position / total, f"Reading section {position} of {total}")
+            self._build_lexical(chunk)
 
-    def _index_chunk(self, position: int, chunk: Chunk) -> None:
-        self._build_lexical(chunk)
-
-        if self._vectors is not None:
-            return
+        # One batched embed call for the whole document.
+        #
+        # This used to walk the chunks one at a time and bail out as soon as
+        # `_vectors` existed, so only chunk 0 ever received a real vector and
+        # every other row stayed zero. `_search_semantic` filters zero scores
+        # out, so retrieval silently returned nothing but chunk 0 while still
+        # reporting mode "semantic" - grading was citing the first section of
+        # the notes and nothing else.
         try:
-            vectors = self.client.embed([chunk.text])
-            vector = np.asarray(vectors[0], dtype=np.float32)
-            if self._vectors is None:
-                self._vectors = np.zeros((len(self.chunks), vector.shape[0]), dtype=np.float32)
-            self._vectors[position - 1] = vector
-            self.mode = "semantic"
+            wanted = [i for i, chunk in enumerate(self.chunks) if chunk.text.strip()]
+            vectors = self.client.embed([self.chunks[i].text for i in wanted])
+            if wanted and len(vectors) == len(wanted):
+                matrix = np.zeros((len(self.chunks), len(vectors[0])), dtype=np.float32)
+                for row, index in enumerate(wanted):
+                    matrix[index] = np.asarray(vectors[row], dtype=np.float32)
+                self._vectors = matrix
+                self.mode = "semantic"
+            else:
+                self.mode = "keyword"
         except OllamaError:
             # Stay on keyword scoring. The app keeps working with one model.
             self._vectors = None
             self.mode = "keyword"
+        return self.mode
 
     def _build_lexical(self, chunk: Chunk) -> None:
         counts: dict[str, float] = {}

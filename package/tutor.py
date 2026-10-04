@@ -12,8 +12,11 @@ Two invariants hold everywhere in here:
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 
+from .ingest import Chunk
+from .ollama import OllamaError
 from .store import Hit, NoteStore, spoils_facts, term_coverage, verify_quote
 
 # A refusal is only believable if the question's key terms are absent from the
@@ -212,6 +215,33 @@ class Tutor:
 
     # ------------------------------------------------------------- generation
 
+    def _questions_for(self, chunk: Chunk) -> list[dict]:
+        """Ask the model what is worth asking about one passage.
+
+        Runs in a worker thread. It touches nothing but its own argument and the
+        client, so several of these can be in flight at once.
+        """
+        raw = self.client.chat_json(
+            [
+                {
+                    "role": "system",
+                    "content": "You write revision questions that can only be answered from a given passage. You reply with JSON only.",
+                },
+                {
+                    "role": "user",
+                    "content": _QUESTION_PROMPT.format(
+                        start=chunk.line_start,
+                        end=chunk.line_end,
+                        heading=f" | {chunk.heading}" if chunk.heading else "",
+                        body=chunk.text,
+                    ),
+                },
+            ],
+            schema=QUESTION_SCHEMA,
+            options={"temperature": 0.7},
+        )
+        return list((raw or {}).get("questions", []))
+
     def build_session(self, count: int = 8, per_chunk: int = 2, progress=None) -> list[Question]:
         """Spread `count` questions across the whole document.
 
@@ -229,35 +259,33 @@ class Tutor:
             step = len(chunks) / needed
             picks = sorted({min(len(chunks) - 1, int(i * step)) for i in range(needed)})
 
+        batches: list[list[dict]] = [[] for _ in picks]
+        with ThreadPoolExecutor(max_workers=min(len(picks), 4)) as pool:
+            futures = {
+                pool.submit(self._questions_for, chunks[index]): slot
+                for slot, index in enumerate(picks)
+            }
+            # Progress is reported from here rather than from the workers, so the
+            # st.status update always happens on the main thread.
+            for done, future in enumerate(as_completed(futures), start=1):
+                slot = futures[future]
+                try:
+                    batches[slot] = future.result()
+                except OllamaError:
+                    # One unreachable passage should not cost the whole session.
+                    batches[slot] = []
+                if progress:
+                    progress(
+                        done / len(picks),
+                        f"Wrote questions from {done} of {len(picks)} sections",
+                    )
+
         questions: list[Question] = []
         seen: set[str] = set()
 
-        for position, index in enumerate(picks, start=1):
+        for index, batch in zip(picks, batches):
             chunk = chunks[index]
-            if progress:
-                progress(position / len(picks), f"Writing questions from section {position} of {len(picks)}")
-
-            raw = self.client.chat_json(
-                [
-                    {
-                        "role": "system",
-                        "content": "You write revision questions that can only be answered from a given passage. You reply with JSON only.",
-                    },
-                    {
-                        "role": "user",
-                        "content": _QUESTION_PROMPT.format(
-                            start=chunk.line_start,
-                            end=chunk.line_end,
-                            heading=f" | {chunk.heading}" if chunk.heading else "",
-                            body=chunk.text,
-                        ),
-                    },
-                ],
-                schema=QUESTION_SCHEMA,
-                options={"temperature": 0.7},
-            )
-
-            for item in (raw or {}).get("questions", [])[:per_chunk]:
+            for item in batch[:per_chunk]:
                 text = _truncate(item.get("question", ""), 260)
                 if len(text) < 12:
                     continue
