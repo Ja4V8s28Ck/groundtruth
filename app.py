@@ -464,7 +464,15 @@ def render_quiz() -> None:
                 st.info(verdict.nudge, icon=":material/lightbulb:")
 
             # Retrieval costs a model call, so only do it once the panel is open.
-            passage = st.expander("Show the whole passage", icon=":material/article:", on_change="rerun")
+            # The key is required, not cosmetic: this sits in a loop, and Streamlit
+            # derives element IDs from type plus params, so ten identical
+            # expanders raise StreamlitDuplicateElementId.
+            passage = st.expander(
+                "Show the whole passage",
+                key=f"passage_{question.id}",
+                icon=":material/article:",
+                on_change="rerun",
+            )
             if passage.open:
                 hits = st.session_state.store.search(question.text, k=1)
                 if hits:
