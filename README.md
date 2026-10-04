@@ -1,6 +1,6 @@
 # Groundtruth
 
-A revision partner that only answers from a student's own notes and shows the exact line it used for every verdict.
+A revision partner that only answers from a student's own notes and shows the exact line it used for every verdict. [Demo link](https://vimeo.com/1232766472?share=copy&fl=sv&fe=ci).
 
 ## Why I built it
 
