@@ -375,7 +375,8 @@ def render_loaded() -> None:
         on_change="rerun",
     )
     if first.open:
-        st.code(chunks[0].text[:700] + "…", language=None)
+        with first:
+            st.code(chunks[0].text[:700] + "…", language=None)
 
     if st.button(
         "Build my session",
